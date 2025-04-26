@@ -11,32 +11,28 @@ namespace HospitalManagement.Data
 {
 	public class PatientRepository : IPatientRepository
 	{
-		private readonly AppDbContext _context; // Database context injected
+		private readonly AppDbContext _context; 
 
-		// Constructor Injection
 		public PatientRepository(AppDbContext context)
 		{
 			_context = context;
 		}
 
-		// Get all patients, ordered by last name then first name
+		// get all patients, ordered by last name then first name
 		public async Task<List<Patient>> GetAllAsync()
 		{
 			try
 			{
-				// Include Gender details along with Patient
-				// Order for better display
 				return await _context.Patients
-									 .Include(p => p.Gender) // Eager load Gender info
+									 .Include(p => p.Gender) 
 									 .OrderBy(p => p.LastName)
 									 .ThenBy(p => p.FirstName)
-									 .AsNoTracking() // Good practice for read-only lists
+									 .AsNoTracking() 
 									 .ToListAsync();
 			}
 			catch (Exception ex)
 			{
-				// Basic error handling - log or rethrow specific exception
-				Console.WriteLine($"Error fetching all patients: {ex.Message}"); // Bad practice for prod, ok for student demo
+				Console.WriteLine($"Error fetching all patients: {ex.Message}"); 
 				throw; // Rethrow for upper layer handling
 			}
 		}
@@ -46,9 +42,8 @@ namespace HospitalManagement.Data
 		{
 			try
 			{
-				// Use FirstOrDefaultAsync to handle not found case (returns null)
 				return await _context.Patients
-									 .Include(p => p.Gender) // Eager load Gender info
+									 .Include(p => p.Gender) 
 									 .FirstOrDefaultAsync(p => p.PatientId == id);
 			}
 			catch (Exception ex)
@@ -63,7 +58,7 @@ namespace HospitalManagement.Data
 		{
 			if (patient == null)
 			{
-				throw new ArgumentNullException(nameof(patient)); // Guard clause
+				throw new ArgumentNullException(nameof(patient)); 
 			}
 
 			try
