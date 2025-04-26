@@ -1,0 +1,323 @@
+﻿@page "/patient/detail/{PatientId:int}" // Route parameter for patient ID
+@inject PatientService PatientSvc
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime 
+
+<h3>Patient Details</h3>
+<hr />
+
+@if (isLoading)
+{
+    <p><em>Loading patient details...</em></p>
+}
+else if (currentPatient == null)
+{
+    <div class="alert alert-warning" role="alert">
+        Patient not found.
+    </div>
+}
+else
+{
+    @* Display Form or Static Text based on isEditing flag *@
+    if (!isEditing)
+    {
+        @* --- Display Mode --- *@
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Patient ID:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@currentPatient.PatientId</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">First Name:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@currentPatient.FirstName</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Last Name:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@currentPatient.LastName</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Date of Birth:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@currentPatient.DateOfBirth.ToString("yyyy-MM-dd")</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Gender:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@(currentPatient.Gender?.Name ?? "N/A")</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Phone:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@(currentPatient.PhoneNumber ?? "N/A")</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Address:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@(currentPatient.Address ?? "N/A")</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Emergency Contact:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@(currentPatient.EmergencyContactName ?? "N/A")</p>
+            </div>
+        </div>
+        <div class="mb-2 row">
+            <label class="col-sm-3 col-form-label fw-bold">Emergency Phone:</label>
+            <div class="col-sm-9">
+                <p class="form-control-plaintext">@(currentPatient.EmergencyContactPhone ?? "N/A")</p>
+            </div>
+        </div>
+
+        <hr />
+        <button class="btn btn-primary" @onclick="ToggleEdit">Edit</button>
+        <button class="btn btn-danger" @onclick="DeletePatient">Delete</button>
+        <button class="btn btn-secondary" @onclick="BackToList">Back to List</button>
+    }
+    else
+    {
+        @* --- Edit Mode --- *@
+        <EditForm Model="@currentPatient" OnValidSubmit="@UpdatePatient">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="firstName" class="form-label">First Name:</label>
+                <InputText id="firstName" class="form-control" @bind-Value="currentPatient.FirstName" />
+                <ValidationMessage For="@(() => currentPatient.FirstName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastName" class="form-label">Last Name:</label>
+                <InputText id="lastName" class="form-control" @bind-Value="currentPatient.LastName" />
+                <ValidationMessage For="@(() => currentPatient.LastName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="dob" class="form-label">Date of Birth:</label>
+                <InputDate id="dob" class="form-control" @bind-Value="currentPatient.DateOfBirth" />
+                <ValidationMessage For="@(() => currentPatient.DateOfBirth)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="gender" class="form-label">Gender:</label>
+                <InputSelect id="gender" class="form-select" @bind-Value="currentPatient.GenderId">
+                    @* Ensure default option is selected if no valid gender is loaded *@
+                    <option value="0" selected="@(currentPatient.GenderId == 0)">-- Select Gender --</option>
+                    @if (genders != null)
+                    {
+                        @foreach (var gender in genders)
+                        {
+                            <option value="@gender.GenderId">@gender.Name</option>
+                        }
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => currentPatient.GenderId)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number:</label>
+                <InputText id="phone" class="form-control" @bind-Value="currentPatient.PhoneNumber" />
+                <ValidationMessage For="@(() => currentPatient.PhoneNumber)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Address:</label>
+                <InputTextArea id="address" class="form-control" @bind-Value="currentPatient.Address" />
+                <ValidationMessage For="@(() => currentPatient.Address)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="emergName" class="form-label">Emergency Contact Name:</label>
+                <InputText id="emergName" class="form-control" @bind-Value="currentPatient.EmergencyContactName" />
+                <ValidationMessage For="@(() => currentPatient.EmergencyContactName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="emergPhone" class="form-label">Emergency Contact Phone:</label>
+                <InputText id="emergPhone" class="form-control" @bind-Value="currentPatient.EmergencyContactPhone" />
+                <ValidationMessage For="@(() => currentPatient.EmergencyContactPhone)" />
+            </div>
+
+
+            <ValidationSummary />
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+
+            <button type="submit" class="btn btn-success" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm"></span>
+                }
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-secondary" @onclick="ToggleEdit">Cancel Edit</button>
+        </EditForm>
+    }
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert alert-info mt-3" role="alert">
+            Status: @statusMessage
+        </div>
+    }
+}
+
+
+@code {
+    [Parameter]
+    public int PatientId { get; set; } // Capture PatientId from the route
+
+    private Patient? currentPatient; // The patient being viewed/edited
+    private List<Gender>? genders; // Genders for dropdown
+    private bool isLoading = true;
+    private bool isEditing = false; // Controls display/edit mode
+    private bool isSaving = false; // Controls save button state
+    private string? errorMessage; // For errors during load/save/delete
+    private string? statusMessage; // General status updates
+
+    // Load data when PatientId parameter is set
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        statusMessage = null;
+        isEditing = false; // Ensure starting in display mode
+
+        try
+        {
+            // Load patient details AND gender options
+            currentPatient = await PatientSvc.GetPatientByIdAsync(PatientId);
+            genders = await PatientSvc.GetGenders(); // Load genders for edit mode
+            if (currentPatient == null)
+            {
+                statusMessage = $"Patient with ID {PatientId} not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading patient details: {ex.Message}";
+            Console.WriteLine($"Error loading patient {PatientId}: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Toggle between Display and Edit mode
+    private void ToggleEdit()
+    {
+        errorMessage = null; // Clear error when switching modes
+        isEditing = !isEditing;
+
+        // Simple student inefficiency: Re-fetch patient if cancelling edit
+        // A better approach might cache the original or use a separate edit model
+        if (!isEditing && currentPatient != null)
+        {
+            // Optionally reload the original data if cancel is pressed to discard changes made in UI
+            // But for simplicity, we might just keep the potentially modified model state
+            // await OnParametersSetAsync(); // Re-fetch (less efficient but ensures original data)
+        }
+        StateHasChanged(); // Update the UI
+    }
+
+    // Handle saving changes (called from EditForm OnValidSubmit)
+    private async Task UpdatePatient()
+    {
+        if (currentPatient == null) return; // Should not happen if form is visible
+
+        isSaving = true;
+        errorMessage = null;
+        statusMessage = null;
+        StateHasChanged(); // Show spinner
+
+        try
+        {
+            await PatientSvc.UpdatePatientAsync(currentPatient);
+            statusMessage = "Patient updated successfully.";
+            isEditing = false; // Exit edit mode on success
+        }
+        catch (ApplicationException appEx) // Catch validation/specific errors
+        {
+            errorMessage = $"Update Error: {appEx.Message}";
+            // Log the full error for diagnostics
+            Console.WriteLine($"Application error updating patient {PatientId}: {appEx}");
+        }
+        catch (Exception ex) // Catch general errors
+        {
+            errorMessage = $"An unexpected error occurred during update: {ex.Message}";
+            // Log the full error for diagnostics
+            Console.WriteLine($"Unexpected error updating patient {PatientId}: {ex}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged(); // Hide spinner, show message, switch mode
+        }
+    }
+
+    // Handle patient deletion
+    private async Task DeletePatient()
+    {
+        if (currentPatient == null) return;
+
+        errorMessage = null;
+        statusMessage = null;
+
+        // Use basic JavaScript confirm for simplicity
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete patient {currentPatient.FirstName} {currentPatient.LastName} (ID: {currentPatient.PatientId})?");
+
+        if (confirmed)
+        {
+            isLoading = true; // Use isLoading flag to indicate busy state
+            StateHasChanged();
+            try
+            {
+                await PatientSvc.DeletePatientAsync(currentPatient.PatientId);
+                statusMessage = "Patient deleted successfully.";
+                // Navigate back to list after successful delete
+                NavigationManager.NavigateTo("/patients");
+            }
+            catch (ApplicationException appEx) // Catch repo/service specific errors
+            {
+                errorMessage = $"Delete Error: {appEx.Message}";
+                Console.WriteLine($"Application error deleting patient {PatientId}: {appEx}");
+                isLoading = false; // Turn off loading indicator on error
+                StateHasChanged(); // Re-render to show error
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"An unexpected error occurred during deletion: {ex.Message}";
+                Console.WriteLine($"Unexpected error deleting patient {PatientId}: {ex}");
+                isLoading = false; // Turn off loading indicator on error
+                StateHasChanged(); // Re-render to show error
+            }
+            // No finally block needed for isLoading=false because we navigate away on success
+            // or explicitly set it to false on error.
+        }
+        else
+        {
+            statusMessage = "Deletion cancelled.";
+            StateHasChanged();
+        }
+    }
+
+    // Navigate back to the patient list
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/patients");
+    }
+}

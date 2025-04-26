@@ -1,0 +1,93 @@
+﻿@page "/patients"
+@inject PatientService PatientSvc // Inject the service layer
+@inject NavigationManager NavigationManager // To navigate between pages
+
+<h3>Patients List</h3>
+
+@* Display loading message or error *@
+@if (isLoading)
+{
+        <p><em>Loading patients...</em></p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+        <div class="alert alert-danger" role="alert">
+            Error loading patients: @errorMessage
+        </div>
+}
+else if (patients == null || !patients.Any()) // Check if list is null or empty
+{
+        <p><em>No patients found.</em></p>
+}
+else
+{
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Date of Birth</th>
+                    <th>Gender</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var patient in patients)
+            {
+                        <tr>
+                            <td>@patient.PatientId</td>
+                            <td>@patient.FirstName</td>
+                            <td>@patient.LastName</td>
+                            <td>@patient.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                            <td>@(patient.Gender?.Name ?? "N/A")</td> @* Handle case where Gender might not be loaded *@
+                            <td>
+                                <button class="btn btn-sm btn-info" @onclick="() => GoToDetails(patient.PatientId)">Details</button>
+                            </td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
+
+<hr />
+<button class="btn btn-success" @onclick="GoToAddPatient">Add New Patient</button>
+
+@code {
+    private List<Patient>? patients; // List to hold patients (nullable)
+    private bool isLoading = true; // Flag for loading state
+    private string? errorMessage; // Store any error message
+
+    // Executes when the component is initialized
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true; // Set loading flag
+        errorMessage = null; // Clear previous errors
+        try
+        {
+            patients = await PatientSvc.GetAllPatientsAsync(); // Fetch patients from service
+        }
+        catch (Exception ex)
+        {
+            // Catch any exceptions during data fetching
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine($"Error fetching patients: {ex}"); // Log full error for debugging
+        }
+        finally // Executes regardless of success or failure
+        {
+            isLoading = false; // Clear loading flag
+        }
+    }
+
+    // Navigate to the Add Patient page
+    void GoToAddPatient()
+    {
+        NavigationManager.NavigateTo("/patient/add");
+    }
+
+    // Navigate to the Detail page for a specific patient
+    void GoToDetails(int patientId)
+    {
+        NavigationManager.NavigateTo($"/patient/detail/{patientId}");
+    }
+}
