@@ -17,7 +17,6 @@ namespace HospitalManagement.Data
 		{
 			base.OnModelCreating(modelBuilder);
 
-			// Configure relationships if needed (Fluent API)
 			// Many-to-One relationship: Patient -> Gender
 			modelBuilder.Entity<Patient>()
 				.HasOne(p => p.Gender)         // each patient only has one gender
